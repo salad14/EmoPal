@@ -28,7 +28,7 @@ const emotionDetailMap = {
  * @param {string} text 需要分析的文本
  * @returns {Promise<Object>} 情感分析结果
  */
-async function analyzeEmotion(text) {
+async function analyzeEmotionInternal(text) {
   try {
     // 调用内部情感分析API
     const response = await axios.post('/api/analyze-emotion', { text });
@@ -128,11 +128,11 @@ async function callDeepSeekAPI(prompt) {
 }
 
 /**
- * 主处理函数
+ * 分析和聊天处理函数
  * @param {object} req 请求对象
  * @param {object} res 响应对象
  */
-export default async function handler(req, res) {
+export async function analyzeChat(req, res) {
   // 仅接受POST请求
   if (req.method !== 'POST') {
     return res.status(405).json({ error: '仅支持POST请求' });
@@ -146,7 +146,7 @@ export default async function handler(req, res) {
     }
 
     // 分析情感
-    const emotionResult = await analyzeEmotion(userMessage);
+    const emotionResult = await analyzeEmotionInternal(userMessage);
     
     console.log('情感分析结果:', emotionResult);
     
@@ -166,4 +166,7 @@ export default async function handler(req, res) {
     console.error('处理请求时出错:', error);
     return res.status(500).json({ error: error.message || '服务器内部错误' });
   }
-} 
+}
+
+// 为了向后兼容，保留默认导出
+export default analyzeChat; 
