@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "typecheck": "tsc --noEmit",
-    "build:vite": "vite build",
-    "build": "vite build",
+    "dev": "npm exec -- vite",
+    "typecheck": "npm exec -- tsc --noEmit",
+    "build:vite": "npm exec -- vite build",
+    "build": "node vercel-build.js",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "npm exec -- vite preview"
   },
   "dependencies": {
     "react": "^19.1.0",
