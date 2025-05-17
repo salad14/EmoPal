@@ -163,7 +163,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       sender: 'user',
     };
     
-    // 更新消息列表，添加用户消息
+    // 更新消息列表，添加用户消息 (注意这是异步的)
     setMessages(prevMessages => [...prevMessages, newUserMessage]);
     setInputValue('');
     setIsLoading(true);
@@ -180,16 +180,20 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       sender: 'ai',
     };
     
-    // 更新消息列表，添加"正在思考"消息
-    let currentMessages: Message[] = [];
-    setMessages(prevMessages => {
-      currentMessages = [...prevMessages, thinkingMessage];
-      return currentMessages;
-    });
+    // 收集当前所有消息，包括历史消息、用户新消息和思考消息
+    // 重要：不能依赖异步的setMessages的回调中的赋值
+    const allMessages = [
+      ...messages, // 获取当前状态中的所有历史消息
+      newUserMessage, // 添加用户刚刚发送的消息
+      thinkingMessage // 添加思考消息
+    ];
+    
+    // 更新UI显示
+    setMessages(allMessages);
     
     try {
-      // 获取当前所有消息历史，但过滤掉"正在思考"消息
-      const chatHistory = currentMessages
+      // 构建要发送给API的聊天历史，过滤掉"正在思考"消息
+      const chatHistory = allMessages
         .filter(msg => msg.id !== thinkingMessageId) // 过滤掉"正在思考"消息
         .map(msg => ({
           id: msg.id,
