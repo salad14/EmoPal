@@ -32,13 +32,18 @@ const emotionDetailMap = {
 /**
  * 分析文本情感
  * @param {string} text 需要分析的文本
+ * @param {Request} originalRequest 原始请求对象，用于获取URL信息
  * @returns {Promise<Object>} 情感分析结果
  */
-async function analyzeEmotion(text) {
+async function analyzeEmotion(text, originalRequest) {
   try {
-    // 调用内部情感分析API
     console.log('调用情感分析API...');
-    const response = await fetch('/api/analyze-emotion', {
+    
+    // 直接修改为同一Edge Function内部调用方式
+    // 在Edge Function内部，我们可以直接导入和调用另一个API处理函数
+    
+    // 创建一个模拟请求来直接调用analyze-emotion API
+    const mockRequest = new Request('https://example.com/api/analyze-emotion', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -46,11 +51,23 @@ async function analyzeEmotion(text) {
       body: JSON.stringify({ text })
     });
     
+    // 导入analyze-emotion处理函数
+    const { default: analyzeEmotionHandler } = await import('./analyze-emotion.js');
+    
+    // 直接调用处理函数
+    console.log('直接调用analyze-emotion处理函数...');
+    const response = await analyzeEmotionHandler(mockRequest);
+    
+    if (!response.ok) {
+      console.error('情感分析API返回错误状态码:', response.status);
+      throw new Error(`情感分析API返回错误状态码: ${response.status}`);
+    }
+    
     const data = await response.json();
     
     // 检查是否有错误响应
-    if (!response.ok || data.error) {
-      console.error('情感分析API返回错误:', data.error || response.statusText);
+    if (data.error) {
+      console.error('情感分析API返回错误:', data.error);
       throw new Error(data.error || '情感分析服务暂时不可用');
     }
     
@@ -178,7 +195,7 @@ export default async function handler(request) {
     try {
       // 分析情感
       console.log('开始分析用户消息情感:', userMessage);
-      const emotionResult = await analyzeEmotion(userMessage);
+      const emotionResult = await analyzeEmotion(userMessage, request);
       
       console.log('情感分析结果:', emotionResult);
       
