@@ -31,7 +31,8 @@ cp .env.example .env.local
 ## API密钥获取
 
 1. **DeepSeek API**: 访问 [DeepSeek官网](https://deepseek.com/) 注册并获取API密钥。
-2. **情感分析API**: 您可以选择使用商业情感分析API或使用系统内置的简单规则分析。
+2. **百度AI API**: 访问 [百度AI开放平台](https://ai.baidu.com/) 注册账号，创建应用并获取API Key和Secret Key。
+   - 需要开通"自然语言处理"技术服务下的"情感倾向分析"和"对话情绪识别"两个接口权限。
 
 ## 启动项目
 
@@ -47,7 +48,7 @@ npm run dev
 - 语音识别与合成: Web Speech API
 - 3D虚拟形象: Three.js
 - AI对话: DeepSeek API
-- 情感分析: 商用API或内置规则
+- 情感分析: 百度AI自然语言处理（情感倾向分析和对话情绪识别）
 
 ## 注意事项
 

@@ -1,12 +1,18 @@
 import axios from 'axios';
 
-// 定义情感类型
-export type EmotionType = 'happy' | 'sad' | 'angry' | 'anxious' | 'neutral';
+// 定义情感类型，匹配百度AI的情感分析结果
+// 情感倾向：negative(消极)、neutral(中性)、positive(积极)
+// 情绪细分：angry(愤怒)、disgusting(厌恶)、fearful(恐惧)、sad(悲伤)、happy(愉快)、like(喜爱)、thankful(感谢)
+export type EmotionType = 'positive' | 'negative' | 'neutral';
+export type EmotionDetailType = 'angry' | 'disgusting' | 'fearful' | 'sad' | 'happy' | 'like' | 'thankful' | 'neutral';
 
 // API响应接口
 export interface ApiResponse {
   reply: string;
   detectedEmotion?: EmotionType;
+  detectedEmotionDetail?: EmotionDetailType;
+  suggestedReplies?: string[];
+  confidence?: number;
 }
 
 // 创建axios实例
@@ -35,15 +41,20 @@ export const analyzeAndChat = async (userMessage: string): Promise<ApiResponse> 
 /**
  * 仅分析用户情绪
  * @param text 需要分析的文本
- * @returns 检测到的情绪类型
+ * @returns 检测到的情绪类型和详细信息
  */
-export const analyzeEmotion = async (text: string): Promise<EmotionType> => {
+export const analyzeEmotion = async (text: string): Promise<{
+  emotion: EmotionType;
+  emotionDetail?: EmotionDetailType;
+  confidence?: number;
+  suggestedReplies?: string[];
+}> => {
   try {
     const response = await api.post('/analyze-emotion', { text });
-    return response.data.emotion;
+    return response.data;
   } catch (error) {
     console.error('情感分析API调用失败:', error);
-    return 'neutral'; // 默认返回中性情绪
+    return { emotion: 'neutral' }; // 默认返回中性情绪
   }
 };
 
