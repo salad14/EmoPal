@@ -3,7 +3,7 @@ import './VirtualAgent.css';
 
 // Three.js导入
 import * as THREE from 'three';
-import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader';
+import { GLTFLoader/* , type GLTF */ } from 'three/examples/jsm/loaders/GLTFLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 // 背景图片路径
@@ -32,11 +32,13 @@ function createGradientTexture(): THREE.Texture {
   return texture;
 }
 
+/* 
 interface LoadProgress {
   loaded: number;
   total: number;
   [key: string]: any;
 }
+*/
 
 interface VirtualAgentProps {
   isSpeaking: boolean;

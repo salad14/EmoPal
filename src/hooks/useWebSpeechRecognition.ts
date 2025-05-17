@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // 声明Web Speech API类型
+/* 
 interface Window {
   SpeechRecognition?: any;
   webkitSpeechRecognition?: any;
 }
+*/
 
 interface WebSpeechRecognitionHook {
   listening: boolean;

@@ -6,9 +6,9 @@ import { useState, useEffect, useRef } from 'react';
 import type { EmotionType } from './services/apiClient.ts';
 
 function App() {
-  const { speak, speaking, stop, getVoices } = useWebSpeechSynthesis();
+  const { speak, speaking, /* stop, */ getVoices } = useWebSpeechSynthesis();
   const [targetViseme, setTargetViseme] = useState('neutral');
-  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  // const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | undefined>(undefined);
   const [currentEmotion, setCurrentEmotion] = useState<EmotionType>('neutral');
   const isInitializedRef = useRef(false);
@@ -20,7 +20,7 @@ function App() {
     const loadVoices = () => {
       const voices = getVoices();
       if (voices.length > 0) {
-        setAvailableVoices(voices);
+        // setAvailableVoices(voices);
         // 尝试找到一个中文声音并设置为默认
         const chineseVoice = voices.find(voice => voice.lang.startsWith('zh'));
         if (chineseVoice) {
@@ -35,7 +35,7 @@ function App() {
         if (window.speechSynthesis) {
           window.speechSynthesis.onvoiceschanged = () => {
             const updatedVoices = getVoices();
-            setAvailableVoices(updatedVoices);
+            // setAvailableVoices(updatedVoices);
             const chineseVoice = updatedVoices.find(voice => voice.lang.startsWith('zh'));
             if (chineseVoice) {
               setSelectedVoice(chineseVoice);
