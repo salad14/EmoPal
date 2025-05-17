@@ -1,3 +1,9 @@
+// 添加Vercel Edge配置
+export const config = {
+  runtime: 'edge',
+  regions: ['iad1'], // 美国东部区域，可以根据需要修改
+};
+
 // Serverless function for emotion analysis using Baidu AI
 import axios from 'axios';
 
