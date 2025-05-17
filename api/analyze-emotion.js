@@ -225,28 +225,51 @@ function formatEmotionResult(sentimentResult, emotionResult) {
 }
 
 /**
- * 主处理函数
- * @param {object} req 请求对象
- * @param {object} res 响应对象
+ * 主处理函数 - 已适配Edge Runtime
  */
-export default async function handler(req, res) {
+export default async function handler(request) {
   // 仅接受POST请求
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: '仅支持POST请求' });
+  if (request.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: '仅支持POST请求' }), 
+      { 
+        status: 405,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 
   try {
-    const { text } = req.body;
+    // 解析请求体
+    const requestData = await request.json();
+    const { text } = requestData;
     
     if (!text) {
-      return res.status(400).json({ error: '文本不能为空' });
+      return new Response(
+        JSON.stringify({ error: '文本不能为空' }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // 检查是否配置了百度API密钥
     if (!BAIDU_API_KEY || !BAIDU_SECRET_KEY) {
       console.warn('未配置百度API密钥，使用简单规则分析情感');
       const result = simpleEmotionDetection(text);
-      return res.status(200).json(result);
+      return new Response(
+        JSON.stringify(result),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        }
+      );
     }
 
     try {
@@ -260,14 +283,42 @@ export default async function handler(req, res) {
       const result = formatEmotionResult(sentimentResult, emotionResult);
       
       // 返回结果
-      return res.status(200).json(result);
+      return new Response(
+        JSON.stringify(result),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        }
+      );
     } catch (apiError) {
       console.error('百度API调用失败，回退到简单规则:', apiError);
       const result = simpleEmotionDetection(text);
-      return res.status(200).json(result);
+      return new Response(
+        JSON.stringify(result),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
+        }
+      );
     }
   } catch (error) {
     console.error('处理请求时出错:', error);
-    return res.status(500).json({ error: error.message || '服务器内部错误' });
+    return new Response(
+      JSON.stringify({ error: error.message || '服务器内部错误' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 } 

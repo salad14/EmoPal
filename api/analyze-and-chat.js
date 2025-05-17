@@ -134,21 +134,33 @@ async function callDeepSeekAPI(prompt) {
 }
 
 /**
- * 主处理函数
- * @param {object} req 请求对象
- * @param {object} res 响应对象
+ * 主处理函数 - 修改为适配Edge Runtime
  */
-export default async function handler(req, res) {
+export default async function handler(request) {
   // 仅接受POST请求
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: '仅支持POST请求' });
+  if (request.method !== 'POST') {
+    return new Response(
+      JSON.stringify({ error: '仅支持POST请求' }), 
+      { 
+        status: 405,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 
   try {
-    const { userMessage } = req.body;
+    // 解析请求体
+    const requestData = await request.json();
+    const { userMessage } = requestData;
     
     if (!userMessage) {
-      return res.status(400).json({ error: '消息不能为空' });
+      return new Response(
+        JSON.stringify({ error: '消息不能为空' }), 
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // 分析情感
@@ -161,15 +173,32 @@ export default async function handler(req, res) {
     const reply = await callDeepSeekAPI(prompt);
 
     // 返回结果，包含情感分析和AI回复
-    return res.status(200).json({
-      reply,
-      detectedEmotion: emotionResult.emotion,
-      detectedEmotionDetail: emotionResult.emotionDetail,
-      confidence: emotionResult.confidence,
-      suggestedReplies: emotionResult.suggestedReplies
-    });
+    return new Response(
+      JSON.stringify({
+        reply,
+        detectedEmotion: emotionResult.emotion,
+        detectedEmotionDetail: emotionResult.emotionDetail,
+        confidence: emotionResult.confidence,
+        suggestedReplies: emotionResult.suggestedReplies
+      }),
+      { 
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      }
+    );
   } catch (error) {
     console.error('处理请求时出错:', error);
-    return res.status(500).json({ error: error.message || '服务器内部错误' });
+    return new Response(
+      JSON.stringify({ error: error.message || '服务器内部错误' }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 } 
