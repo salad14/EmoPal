@@ -32,6 +32,77 @@ function createGradientTexture(): THREE.Texture {
   return texture;
 }
 
+// 预留音效文件路径
+const INTERACTION_SOUNDS = {
+  rootJoint: '/sounds/interaction/shake.mp3',   // 整体摇晃音效
+  bone01: '/sounds/interaction/nod.mp3',        // 点头音效
+  bone02: '/sounds/interaction/rotate.mp3',     // 旋转音效
+  bone03: '/sounds/interaction/complex.mp3'     // 复合动作音效
+};
+
+// 音效播放器类
+class SoundPlayer {
+  private sounds: Map<string, HTMLAudioElement> = new Map();
+  private currentPlayingSound: HTMLAudioElement | null = null;
+  
+  // 预加载音效
+  preload(): void {
+    Object.entries(INTERACTION_SOUNDS).forEach(([key, path]) => {
+      try {
+        const audio = new Audio(path);
+        audio.load(); // 预加载
+        this.sounds.set(key, audio);
+        console.log(`预加载音效: ${key} - ${path}`);
+      } catch (error) {
+        console.error(`音效预加载失败 ${path}:`, error);
+      }
+    });
+  }
+  
+  // 播放指定音效
+  play(soundKey: string): void {
+    // 先停止当前正在播放的音效
+    this.stopCurrent();
+    
+    const audio = this.sounds.get(soundKey);
+    if (audio) {
+      // 重置音频以便重新播放
+      audio.currentTime = 0;
+      
+      // 保存当前播放的音效引用
+      this.currentPlayingSound = audio;
+      
+      // 播放音效并捕获可能的错误
+      audio.play().catch(error => {
+        console.error(`音效播放失败 ${soundKey}:`, error);
+        this.currentPlayingSound = null;
+      });
+      
+      console.log(`播放音效: ${soundKey}`);
+    } else {
+      console.warn(`音效未找到: ${soundKey}`);
+    }
+  }
+  
+  // 停止当前播放的音效
+  stopCurrent(): void {
+    if (this.currentPlayingSound) {
+      this.currentPlayingSound.pause();
+      this.currentPlayingSound.currentTime = 0;
+      this.currentPlayingSound = null;
+    }
+  }
+  
+  // 停止所有音效
+  stopAll(): void {
+    this.stopCurrent();
+    this.sounds.forEach(audio => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+  }
+}
+
 /* 
 interface LoadProgress {
   loaded: number;
@@ -96,6 +167,9 @@ const VirtualAgent: React.FC<VirtualAgentProps> = ({ isSpeaking, targetVisemeKey
   const currentVisemeTargetRef = useRef(visemesMap[targetVisemeKey] || visemesMap.neutral);
   
   const isMounted = useRef(false);
+  
+  // 添加音效播放器引用
+  const soundPlayerRef = useRef<SoundPlayer | null>(null);
   
   // Update refs when props change
   useEffect(() => {
@@ -381,6 +455,11 @@ const VirtualAgent: React.FC<VirtualAgentProps> = ({ isSpeaking, targetVisemeKey
         return;
       }
       
+      // 确保停止之前可能正在播放的音效
+      if (soundPlayerRef.current) {
+        soundPlayerRef.current.stopCurrent();
+      }
+      
       // 计算鼠标在归一化设备坐标中的位置
       const rect = containerRef.current.getBoundingClientRect();
       mouseRef.current.x = ((event.clientX - rect.left) / containerRef.current.clientWidth) * 2 - 1;
@@ -422,16 +501,31 @@ const VirtualAgent: React.FC<VirtualAgentProps> = ({ isSpeaking, targetVisemeKey
                        randomBone === bone02Ref.current ? "unnamed001_02" : 
                        "unnamed002_03";
       
+      // 确定对应的音效键名
+      const soundKey = randomBone === rootJointRef.current ? "rootJoint" : 
+                       randomBone === bone01Ref.current ? "bone01" : 
+                       randomBone === bone02Ref.current ? "bone02" : 
+                       "bone03";
+      
       console.log(`VirtualAgent: 随机选择 ${boneName} 执行交互动画`);
+      
+      // 播放对应的音效
+      if (soundPlayerRef.current) {
+        soundPlayerRef.current.play(soundKey);
+      }
       
       // 设置交互状态
       isPlayingInteractionAnimRef.current = true;
       interactionTimeRef.current = 0;
       
-      // 2秒后重置交互状态
+      // 2秒后重置交互状态并停止音效
       setTimeout(() => {
         isPlayingInteractionAnimRef.current = false;
-        console.log("VirtualAgent: 交互动画结束");
+        // 确保音效停止
+        if (soundPlayerRef.current) {
+          soundPlayerRef.current.stopCurrent();
+        }
+        console.log("VirtualAgent: 交互动画结束，停止音效");
       }, 2000);
     };
     
@@ -664,6 +758,10 @@ const VirtualAgent: React.FC<VirtualAgentProps> = ({ isSpeaking, targetVisemeKey
     };
     window.addEventListener('resize', handleResize);
     
+    // 初始化音效播放器
+    soundPlayerRef.current = new SoundPlayer();
+    soundPlayerRef.current.preload();
+    
     return () => {
       console.log("VirtualAgent: Cleaning up Three.js resources...");
       cancelAnimationFrame(animationFrameIdRef.current);
@@ -729,6 +827,12 @@ const VirtualAgent: React.FC<VirtualAgentProps> = ({ isSpeaking, targetVisemeKey
       jawBoneRef.current = null;
       initialBoneStatesRef.current.clear();
       clockRef.current = null;
+      
+      // 停止所有音效
+      if (soundPlayerRef.current) {
+        soundPlayerRef.current.stopAll();
+      }
+      
       console.log("VirtualAgent: Cleanup complete.");
     };
   }, []);

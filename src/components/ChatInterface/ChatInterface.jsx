@@ -5,7 +5,7 @@ import './ChatInterface.css';
 const ChatInterface = () => {
   const [messages, setMessages] = useState([
     { id: 1, text: '你好！', sender: 'user' },
-    { id: 2, text: '你好，有什么可以帮你的吗？', sender: 'ai' },
+    { id: 2, text: '你好，我是海绵宝宝接线员，有什么可以帮你的吗？', sender: 'ai' },
   ]);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef(null);

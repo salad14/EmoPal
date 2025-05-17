@@ -12,14 +12,18 @@ interface Message {
 }
 
 interface ChatInterfaceProps {
-  onAISpeak: (text: string, options?: { lang?: string }) => void;
+  onAISpeak: (text: string, options?: { 
+    lang?: string;
+    voiceType?: 'normal' | 'spongebob' | 'cartoon' | 'robot';
+  }) => void;
   onEmotionChange?: (emotion: EmotionType) => void;
+  voiceReady?: boolean;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChange }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChange, voiceReady }) => {
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, text: '你好！', sender: 'user' },
-    { id: 2, text: '你好，有什么可以帮你的吗？', sender: 'ai' },
+    { id: 2, text: '你好，我是海绵宝宝接线员，有什么可以帮你的吗？', sender: 'ai' },
   ]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -39,26 +43,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
     isSpeechRecognitionSupported
   } = useWebSpeechRecognition();
 
-  // 初始化时让AI打招呼，使用ref确保只执行一次
+  // 初始化时让AI打招呼，使用ref确保只执行一次，并且等待语音准备好
   useEffect(() => {
-    if (initialGreetingRef.current) return;
+    // 如果已经播放过或语音尚未准备好，则不执行
+    if (initialGreetingRef.current || !voiceReady) return;
     
-    // 设置初始欢迎语已经执行的标志
+    // 设置初始欢迎语已经执行的标志，但不立即播放
     initialGreetingRef.current = true;
-    console.log("准备播放AI初始欢迎语");
+    console.log("语音已准备好，准备播放AI初始欢迎语");
     
     const initialAIMessage = messages.find(msg => msg.id === 2 && msg.sender === 'ai');
     if (initialAIMessage && onAISpeak) {
-      // 使用延迟确保组件完全挂载，TTS引擎准备就绪
+      // 增加短暂延迟，确保一切就绪
       const timer = setTimeout(() => {
         console.log("播放AI初始欢迎语:", initialAIMessage.text);
-        onAISpeak(initialAIMessage.text, { lang: 'zh-CN' });
-      }, 1500); // 增加延迟时间，确保TTS引擎准备好
+        // 显式指定使用海绵宝宝音色来播放初始欢迎语
+        onAISpeak(initialAIMessage.text, { 
+          lang: 'zh-CN',
+          voiceType: 'spongebob' // 确保初始欢迎语使用海绵宝宝音色
+        });
+      }, 500); // 短暂延迟即可，因为我们已经确认语音准备好了
       
       return () => clearTimeout(timer);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, [voiceReady]); // 依赖于voiceReady，当语音准备好时触发
 
   // 当语音识别结果更新时，更新输入框
   useEffect(() => {
@@ -194,7 +203,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       
       // 使用TTS朗读AI回复
       if (onAISpeak) {
-        onAISpeak(response.reply, { lang: 'zh-CN' });
+        onAISpeak(response.reply, { 
+          lang: 'zh-CN',
+          voiceType: 'spongebob' // 使用海绵宝宝音色
+        });
       }
     } catch (error) {
       console.error('获取AI回复失败:', error);
@@ -214,7 +226,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       
       // 错误提示也需要TTS朗读
       if (onAISpeak) {
-        onAISpeak(errorMessage.text, { lang: 'zh-CN' });
+        onAISpeak(errorMessage.text, { 
+          lang: 'zh-CN',
+          voiceType: 'spongebob' // 使用海绵宝宝音色
+        });
       }
     } finally {
       setIsLoading(false);
