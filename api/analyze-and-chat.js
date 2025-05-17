@@ -264,7 +264,7 @@ export default async function handler(request) {
       };
       
       // 添加错误信息到提示中
-      const errorPrompt = `
+      let errorPrompt = `
 你是一位名为"心灵伙伴"的AI助手，专注于提供情感支持和陪伴。你应该始终以友好、理解和支持的方式回应用户。
 
 `;
