@@ -37,16 +37,28 @@ const emotionDetailMap = {
 async function analyzeEmotion(text) {
   try {
     // 调用内部情感分析API
-    const response = await axios.post('/api/analyze-emotion', { text });
-    return response.data;
+    console.log('调用情感分析API...');
+    const response = await fetch('/api/analyze-emotion', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ text })
+    });
+    
+    const data = await response.json();
+    
+    // 检查是否有错误响应
+    if (!response.ok || data.error) {
+      console.error('情感分析API返回错误:', data.error || response.statusText);
+      throw new Error(data.error || '情感分析服务暂时不可用');
+    }
+    
+    console.log('情感分析成功:', data);
+    return data;
   } catch (error) {
     console.error('情感分析失败:', error);
-    // 默认返回中性情绪
-    return {
-      emotion: 'neutral',
-      emotionDetail: 'neutral',
-      confidence: 0.5
-    };
+    throw new Error('情感分析服务暂时不可用: ' + error.message);
   }
 }
 
@@ -163,41 +175,100 @@ export default async function handler(request) {
       );
     }
 
-    // 分析情感
-    const emotionResult = await analyzeEmotion(userMessage);
-    
-    console.log('情感分析结果:', emotionResult);
-    
-    // 构建提示并调用DeepSeek
-    const prompt = buildPrompt(userMessage, emotionResult);
-    const reply = await callDeepSeekAPI(prompt);
+    try {
+      // 分析情感
+      console.log('开始分析用户消息情感:', userMessage);
+      const emotionResult = await analyzeEmotion(userMessage);
+      
+      console.log('情感分析结果:', emotionResult);
+      
+      // 构建提示并调用DeepSeek
+      const prompt = buildPrompt(userMessage, emotionResult);
+      const reply = await callDeepSeekAPI(prompt);
 
-    // 返回结果，包含情感分析和AI回复
-    return new Response(
-      JSON.stringify({
-        reply,
-        detectedEmotion: emotionResult.emotion,
-        detectedEmotionDetail: emotionResult.emotionDetail,
-        confidence: emotionResult.confidence,
-        suggestedReplies: emotionResult.suggestedReplies
-      }),
-      { 
-        status: 200,
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type'
+      // 返回结果，包含情感分析和AI回复
+      return new Response(
+        JSON.stringify({
+          reply,
+          detectedEmotion: emotionResult.emotion,
+          detectedEmotionDetail: emotionResult.emotionDetail,
+          confidence: emotionResult.confidence,
+          suggestedReplies: emotionResult.suggestedReplies
+        }),
+        { 
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type'
+          }
         }
+      );
+    } catch (emotionError) {
+      console.error('情感分析出错:', emotionError);
+      
+      // 即使情感分析失败，也尝试生成回复
+      const defaultEmotionResult = {
+        emotion: 'neutral',
+        emotionDetail: 'neutral',
+        confidence: 0.5
+      };
+      
+      // 添加错误信息到提示中
+      const errorPrompt = `
+你是一位名为"心灵伙伴"的AI助手，专注于提供情感支持和陪伴。你应该始终以友好、理解和支持的方式回应用户。
+
+注意：情感分析系统暂时不可用，无法确定用户的情绪状态。
+
+用户消息："${userMessage}"
+
+请根据用户的消息内容，提供一个适合的回应。你的回答应该：
+1. 简短地回应用户的消息内容
+2. 根据情况给予适当的支持、建议或鼓励
+3. 如果合适，询问一个后续问题，鼓励用户继续对话
+
+你的回答应该简洁、温暖，不要说教或过于复杂。避免使用过于专业的心理学术语。
+总共不超过5句话，务必保持亲和力和同理心。
+`;
+      
+      try {
+        const reply = await callDeepSeekAPI(errorPrompt);
+        
+        return new Response(
+          JSON.stringify({
+            reply,
+            detectedEmotion: defaultEmotionResult.emotion,
+            detectedEmotionDetail: defaultEmotionResult.emotionDetail,
+            confidence: defaultEmotionResult.confidence,
+            error: '情感分析服务暂时不可用，使用默认情感设置'
+          }),
+          { 
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type'
+            }
+          }
+        );
+      } catch (deepseekError) {
+        throw new Error('AI助手和情感分析服务均暂时不可用');
       }
-    );
+    }
   } catch (error) {
     console.error('处理请求时出错:', error);
     return new Response(
       JSON.stringify({ error: error.message || '服务器内部错误' }),
       { 
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
       }
     );
   }

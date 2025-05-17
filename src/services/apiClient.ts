@@ -13,6 +13,7 @@ export interface ApiResponse {
   detectedEmotionDetail?: EmotionDetailType;
   suggestedReplies?: string[];
   confidence?: number;
+  error?: string;
 }
 
 // 创建axios实例
@@ -30,11 +31,33 @@ const api = axios.create({
  */
 export const analyzeAndChat = async (userMessage: string): Promise<ApiResponse> => {
   try {
+    console.log('调用API: /analyze-and-chat');
     const response = await api.post('/analyze-and-chat', { userMessage });
+    console.log('API响应状态:', response.status);
+    
+    // 检查是否有错误信息
+    if (response.data.error) {
+      console.warn('API返回错误信息:', response.data.error);
+    }
+    
     return response.data;
   } catch (error) {
     console.error('API调用失败:', error);
-    throw new Error('与AI助手通信时发生错误，请稍后再试。');
+    
+    // 从错误响应中提取详细信息
+    let errorMessage = '与AI助手通信时发生错误，请稍后再试。';
+    if (axios.isAxiosError(error) && error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    // 返回带有错误信息的响应
+    return {
+      reply: '抱歉，我暂时无法回应，请稍后再试。',
+      detectedEmotion: 'neutral',
+      error: errorMessage
+    };
   }
 };
 

@@ -163,6 +163,21 @@ function formatEmotionResult(sentimentResult, emotionResult) {
   };
   
   try {
+    console.log('格式化情感分析结果...');
+    
+    // 检查API返回是否包含错误
+    if (sentimentResult.error_code) {
+      console.error('百度情感倾向分析API返回错误:', 
+                   sentimentResult.error_code, sentimentResult.error_msg);
+      throw new Error(`百度情感API错误: ${sentimentResult.error_msg}`);
+    }
+    
+    if (emotionResult.error_code) {
+      console.error('百度对话情绪识别API返回错误:', 
+                   emotionResult.error_code, emotionResult.error_msg);
+      throw new Error(`百度情绪API错误: ${emotionResult.error_msg}`);
+    }
+    
     // 从情感倾向分析获取基本情感
     let emotion;
     let confidence = 0;
@@ -170,6 +185,8 @@ function formatEmotionResult(sentimentResult, emotionResult) {
     if (sentimentResult?.items && sentimentResult.items.length > 0) {
       const sentiment = sentimentResult.items[0].sentiment;
       confidence = sentimentResult.items[0].confidence;
+      
+      console.log('情感倾向分析结果:', sentiment, '置信度:', confidence);
       
       // 百度情感分类：0-负向，1-中性，2-正向
       switch (sentiment) {
@@ -186,6 +203,7 @@ function formatEmotionResult(sentimentResult, emotionResult) {
           emotion = 'neutral';
       }
     } else {
+      console.warn('情感倾向分析结果为空或格式不正确');
       emotion = 'neutral';
     }
     
@@ -204,20 +222,29 @@ function formatEmotionResult(sentimentResult, emotionResult) {
         );
         
         emotionDetail = subitem.label;
+        console.log('情绪细分类型:', emotionDetail, '概率:', subitem.prob);
         
         // 获取参考回复
         if (subitem.replies && subitem.replies.length > 0) {
           suggestedReplies = subitem.replies;
+          console.log('建议回复数量:', suggestedReplies.length);
         }
+      } else {
+        console.warn('情绪二级分类结果为空');
       }
+    } else {
+      console.warn('对话情绪识别结果为空或格式不正确');
     }
     
-    return {
+    const result = {
       emotion,
       emotionDetail,
       confidence,
       suggestedReplies
     };
+    
+    console.log('最终情感分析结果:', result);
+    return result;
   } catch (error) {
     console.error('格式化情感分析结果时出错:', error);
     return defaultResult;
@@ -256,12 +283,14 @@ export default async function handler(request) {
 
     // 检查是否配置了百度API密钥
     if (!BAIDU_API_KEY || !BAIDU_SECRET_KEY) {
-      console.warn('未配置百度API密钥，使用简单规则分析情感');
-      const result = simpleEmotionDetection(text);
+      console.error('未配置百度API密钥，无法进行情感分析');
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify({ 
+          error: '未配置百度API密钥，请联系管理员配置百度AI API密钥',
+          missingKeys: true 
+        }),
         {
-          status: 200,
+          status: 500,
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
@@ -274,13 +303,18 @@ export default async function handler(request) {
 
     try {
       // 并行调用两个API以提高性能
+      console.log('开始调用百度AI API分析情感...');
       const [sentimentResult, emotionResult] = await Promise.all([
         analyzeSentiment(text),
         analyzeEmotion(text)
       ]);
       
+      console.log('百度情感分析结果:', JSON.stringify(sentimentResult));
+      console.log('百度情绪识别结果:', JSON.stringify(emotionResult));
+      
       // 格式化并合并两个API的结果
       const result = formatEmotionResult(sentimentResult, emotionResult);
+      console.log('最终情感分析结果:', JSON.stringify(result));
       
       // 返回结果
       return new Response(
@@ -296,12 +330,14 @@ export default async function handler(request) {
         }
       );
     } catch (apiError) {
-      console.error('百度API调用失败，回退到简单规则:', apiError);
-      const result = simpleEmotionDetection(text);
+      console.error('百度API调用失败:', apiError);
       return new Response(
-        JSON.stringify(result),
+        JSON.stringify({ 
+          error: '百度情感分析API调用失败，请稍后再试',
+          apiError: apiError.message 
+        }),
         {
-          status: 200,
+          status: 500,
           headers: {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',

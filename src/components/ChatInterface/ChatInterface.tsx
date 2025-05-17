@@ -179,10 +179,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
     
     try {
       // 调用情感分析和AI回复API
+      console.log('发送用户消息到API:', userMessageText);
       const response = await analyzeAndChat(userMessageText);
+      console.log('API响应:', response);
+      
+      // 检查是否有错误信息
+      if (response.error) {
+        console.warn('API返回错误信息:', response.error);
+      }
       
       // 更新情感状态
       if (response.detectedEmotion && onEmotionChange) {
+        console.log('更新情感状态:', response.detectedEmotion);
         onEmotionChange(response.detectedEmotion);
         setCurrentEmotion(response.detectedEmotion);
       }
@@ -214,7 +222,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       // 替换思考中消息为错误消息
       const errorMessage: Message = {
         id: thinkingMessageId,
-        text: '抱歉，我暂时无法回应，请稍后再试。',
+        text: '抱歉，我暂时无法回应，请稍后再试。' + 
+              (error instanceof Error ? `\n\n错误信息: ${error.message}` : ''),
         sender: 'ai',
       };
       
@@ -226,7 +235,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       
       // 错误提示也需要TTS朗读
       if (onAISpeak) {
-        onAISpeak(errorMessage.text, { 
+        onAISpeak('抱歉，我暂时无法回应，请稍后再试。', { 
           lang: 'zh-CN',
           voiceType: 'spongebob' // 使用海绵宝宝音色
         });
