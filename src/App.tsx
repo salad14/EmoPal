@@ -131,12 +131,12 @@ function App() {
   useEffect(() => {
     switch(currentEmotion) {
       case 'positive':
-        setSpeechRate(1.05); // 积极情绪语速稍快
-        setSpeechPitch(1.1); // 音调略高
+        setSpeechRate(1.2); // 积极情绪语速稍快
+        setSpeechPitch(1.2); // 音调略高
         break;
       case 'negative':
-        setSpeechRate(0.85); // 消极情绪语速稍慢
-        setSpeechPitch(0.9); // 音调略低
+        setSpeechRate(0.75); // 消极情绪语速稍慢
+        setSpeechPitch(0.6); // 音调略低
         break;
       case 'neutral':
       default:

@@ -83,9 +83,10 @@ async function analyzeEmotion(text, originalRequest) {
  * 构建DeepSeek提示模板
  * @param {string} userMessage 用户消息
  * @param {Object} emotionResult 情感分析结果
+ * @param {Array} chatHistory 聊天历史记录
  * @returns {string} 完整的提示
  */
-function buildPrompt(userMessage, emotionResult) {
+function buildPrompt(userMessage, emotionResult, chatHistory = []) {
   const {
     emotion = 'neutral',
     emotionDetail = 'neutral',
@@ -105,7 +106,19 @@ function buildPrompt(userMessage, emotionResult) {
 - 主要情感倾向：${emotionText}（置信度：${(confidence * 100).toFixed(0)}%）
 - 具体情绪类型：${emotionDetailText}
 
-用户消息："${userMessage}"
+`;
+
+  // 添加聊天历史记录
+  if (chatHistory && chatHistory.length > 0) {
+    prompt += `以下是之前的对话历史（请记住这些内容以保持对话连贯性）：\n`;
+    chatHistory.forEach((msg, index) => {
+      const role = msg.sender === 'user' ? '用户' : 'AI';
+      prompt += `[${role}]: ${msg.text}\n`;
+    });
+    prompt += `\n`;
+  }
+
+  prompt += `用户当前消息："${userMessage}"
 `;
 
   // 如果有建议回复，添加到提示中
@@ -118,10 +131,11 @@ ${suggestedReplies.map(reply => `- "${reply}"`).join('\n')}
 
   // 添加回复指导
   prompt += `
-请根据用户的情绪状态，提供一个适合的回应。你的回答应该：
-1. 首先，简短地承认和理解用户的情绪（1-2句）
-2. 然后，根据情况给予适当的支持、安慰、建议或鼓励（2-3句）
-3. 如果合适，询问一个后续问题，鼓励用户继续对话
+请根据完整的对话历史和用户的情绪状态，提供一个适合的回应。你的回答应该：
+1. 展现出你记得之前的对话内容，保持对话连贯性
+2. 简短地承认和理解用户的情绪（1-2句）
+3. 然后，根据情况给予适当的支持、安慰、建议或鼓励（2-3句）
+4. 如果合适，询问一个后续问题，鼓励用户继续对话
 
 你的回答应该简洁、温暖，不要说教或过于复杂。避免使用过于专业的心理学术语。
 总共不超过5句话，务必保持亲和力和同理心。
@@ -133,17 +147,33 @@ ${suggestedReplies.map(reply => `- "${reply}"`).join('\n')}
 /**
  * 调用DeepSeek API
  * @param {string} prompt 完整的提示
+ * @param {Array} chatHistory 聊天历史记录
  * @returns {Promise<string>} AI回复
  */
-async function callDeepSeekAPI(prompt) {
+async function callDeepSeekAPI(prompt, chatHistory = []) {
   try {
+    // 构建消息数组，先放入系统消息
+    const messages = [
+      { role: "system", content: "你是一位名为'心灵伙伴'的AI助手，专注于提供情感支持和陪伴。你应该记住对话历史，提供连贯的回应。" }
+    ];
+    
+    // 如果有聊天历史，添加到消息数组中
+    if (chatHistory && chatHistory.length > 0) {
+      chatHistory.forEach(msg => {
+        const role = msg.sender === 'user' ? 'user' : 'assistant';
+        messages.push({ role, content: msg.text });
+      });
+    }
+    
+    // 添加当前用户消息
+    messages.push({ role: "user", content: prompt });
+    
+    console.log('发送到DeepSeek的消息数组:', messages.length, '条消息');
+    
     const response = await axios.post('https://api.deepseek.com/v1/chat/completions', 
       {
         model: "deepseek-chat",
-        messages: [
-          { role: "system", content: "你是一位名为'心灵伙伴'的AI助手，专注于提供情感支持和陪伴。" },
-          { role: "user", content: prompt }
-        ],
+        messages: messages,
         temperature: 0.7,
         max_tokens: 500
       },
@@ -180,7 +210,7 @@ export default async function handler(request) {
   try {
     // 解析请求体
     const requestData = await request.json();
-    const { userMessage } = requestData;
+    const { userMessage, chatHistory = [] } = requestData;
     
     if (!userMessage) {
       return new Response(
@@ -195,13 +225,14 @@ export default async function handler(request) {
     try {
       // 分析情感
       console.log('开始分析用户消息情感:', userMessage);
+      console.log('收到的对话历史:', chatHistory ? chatHistory.length : 0, '条消息');
       const emotionResult = await analyzeEmotion(userMessage, request);
       
       console.log('情感分析结果:', emotionResult);
       
       // 构建提示并调用DeepSeek
-      const prompt = buildPrompt(userMessage, emotionResult);
-      const reply = await callDeepSeekAPI(prompt);
+      const prompt = buildPrompt(userMessage, emotionResult, chatHistory);
+      const reply = await callDeepSeekAPI(prompt, chatHistory);
 
       // 返回结果，包含情感分析和AI回复
       return new Response(
@@ -236,21 +267,33 @@ export default async function handler(request) {
       const errorPrompt = `
 你是一位名为"心灵伙伴"的AI助手，专注于提供情感支持和陪伴。你应该始终以友好、理解和支持的方式回应用户。
 
-注意：情感分析系统暂时不可用，无法确定用户的情绪状态。
+`;
 
-用户消息："${userMessage}"
+      // 添加聊天历史记录
+      if (chatHistory && chatHistory.length > 0) {
+        errorPrompt += `以下是之前的对话历史（请记住这些内容以保持对话连贯性）：\n`;
+        chatHistory.forEach((msg, index) => {
+          const role = msg.sender === 'user' ? '用户' : 'AI';
+          errorPrompt += `[${role}]: ${msg.text}\n`;
+        });
+        errorPrompt += `\n`;
+      }
 
-请根据用户的消息内容，提供一个适合的回应。你的回答应该：
-1. 简短地回应用户的消息内容
-2. 根据情况给予适当的支持、建议或鼓励
-3. 如果合适，询问一个后续问题，鼓励用户继续对话
+      errorPrompt += `用户当前消息："${userMessage}"
+
+请根据完整的对话历史和用户的消息内容，提供一个适合的回应。你的回答应该：
+1. 展现出你记得之前的对话内容，保持对话连贯性
+2. 简短地回应用户的消息内容
+3. 根据情况给予适当的支持、建议或鼓励
+4. 如果合适，询问一个后续问题，鼓励用户继续对话
 
 你的回答应该简洁、温暖，不要说教或过于复杂。避免使用过于专业的心理学术语。
+请你不要一直询问用户是否需要帮助，你只需要根据用户的消息内容，提供一个适合的回应。
 总共不超过5句话，务必保持亲和力和同理心。
 `;
       
       try {
-        const reply = await callDeepSeekAPI(errorPrompt);
+        const reply = await callDeepSeekAPI(errorPrompt, chatHistory);
         
         return new Response(
           JSON.stringify({

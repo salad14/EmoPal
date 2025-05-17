@@ -175,12 +175,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       text: '正在思考...',
       sender: 'ai',
     };
-    setMessages(prevMessages => [...prevMessages, thinkingMessage]);
+    
+    // 获取当前的消息列表，包括新增的用户消息，但不包括正在思考的消息
+    let currentMessages: Message[] = [];
+    setMessages(prevMessages => {
+      currentMessages = [...prevMessages, thinkingMessage];
+      return currentMessages;
+    });
+    
+    // 过滤出不包括"正在思考"消息的历史记录，用于发送给API
+    const chatHistory = currentMessages
+      .filter(msg => msg.text !== '正在思考...')
+      .map(msg => ({
+        id: msg.id,
+        text: msg.text,
+        sender: msg.sender,
+        emotion: msg.emotion
+      }));
     
     try {
       // 调用情感分析和AI回复API
       console.log('发送用户消息到API:', userMessageText);
-      const response = await analyzeAndChat(userMessageText);
+      console.log('发送聊天历史:', chatHistory.length, '条消息');
+      
+      // 发送完整的聊天历史给API
+      const response = await analyzeAndChat(userMessageText, chatHistory);
       console.log('API响应:', response);
       
       // 检查是否有错误信息

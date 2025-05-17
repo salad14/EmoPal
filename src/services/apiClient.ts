@@ -27,12 +27,19 @@ const api = axios.create({
 /**
  * 分析用户情绪并生成AI回复
  * @param userMessage 用户输入的消息
+ * @param chatHistory 聊天历史记录，包含之前的所有对话
  * @returns AI回复和检测到的情绪
  */
-export const analyzeAndChat = async (userMessage: string): Promise<ApiResponse> => {
+export const analyzeAndChat = async (userMessage: string, chatHistory: Array<{id: number; text: string; sender: 'user' | 'ai'; emotion?: EmotionType}> = []): Promise<ApiResponse> => {
   try {
     console.log('调用API: /analyze-and-chat');
-    const response = await api.post('/analyze-and-chat', { userMessage });
+    console.log('发送对话历史:', chatHistory.length, '条消息');
+    
+    const response = await api.post('/analyze-and-chat', { 
+      userMessage,
+      chatHistory // 添加对话历史
+    });
+    
     console.log('API响应状态:', response.status);
     
     // 检查是否有错误信息

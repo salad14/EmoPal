@@ -108,7 +108,7 @@ function simpleEmotionDetection(text) {
   text = text.toLowerCase();
   
   // 简单的关键词匹配
-  const positiveKeywords = ['开心', '快乐', '高兴', '好', '棒', '喜欢', '爱', '感谢', '谢谢', '好的', '不错'];
+  const positiveKeywords = ['开心', '快乐', '高兴', '棒', '喜欢', '爱', '感谢', '谢谢', '好的', '不错'];
   const negativeKeywords = [
     '难过', '伤心', '悲伤', '痛苦', '失望', '遗憾', '哭', '泪', '不开心',
     '生气', '愤怒', '烦', '讨厌', '恨', '恼火', '滚', '恶心', '混蛋',
