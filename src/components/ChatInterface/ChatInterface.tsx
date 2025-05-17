@@ -1,0 +1,292 @@
+import { useState, useEffect, useRef } from 'react';
+import useWebSpeechRecognition from '../../hooks/useWebSpeechRecognition.ts';
+import { analyzeAndChat } from '../../services/apiClient.ts';
+import type { EmotionType } from '../../services/apiClient.ts';
+import './ChatInterface.css';
+
+interface Message {
+  id: number;
+  text: string;
+  sender: 'user' | 'ai';
+  emotion?: EmotionType;
+}
+
+interface ChatInterfaceProps {
+  onAISpeak: (text: string, options?: { lang?: string }) => void;
+  onEmotionChange?: (emotion: EmotionType) => void;
+}
+
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChange }) => {
+  const [messages, setMessages] = useState<Message[]>([
+    { id: 1, text: '你好！', sender: 'user' },
+    { id: 2, text: '你好，有什么可以帮你的吗？', sender: 'ai' },
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesAreaRef = useRef<HTMLDivElement>(null);
+  const [userScrolling, setUserScrolling] = useState(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const initialGreetingRef = useRef(false);
+  const [currentEmotion, setCurrentEmotion] = useState<EmotionType | undefined>(undefined);
+  
+  const {
+    listening,
+    transcript,
+    error: speechError,
+    startListening,
+    stopListening,
+    isSpeechRecognitionSupported
+  } = useWebSpeechRecognition();
+
+  // 初始化时让AI打招呼，使用ref确保只执行一次
+  useEffect(() => {
+    if (initialGreetingRef.current) return;
+    
+    // 设置初始欢迎语已经执行的标志
+    initialGreetingRef.current = true;
+    console.log("准备播放AI初始欢迎语");
+    
+    const initialAIMessage = messages.find(msg => msg.id === 2 && msg.sender === 'ai');
+    if (initialAIMessage && onAISpeak) {
+      // 使用延迟确保组件完全挂载，TTS引擎准备就绪
+      const timer = setTimeout(() => {
+        console.log("播放AI初始欢迎语:", initialAIMessage.text);
+        onAISpeak(initialAIMessage.text, { lang: 'zh-CN' });
+      }, 1500); // 增加延迟时间，确保TTS引擎准备好
+      
+      return () => clearTimeout(timer);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); 
+
+  // 当语音识别结果更新时，更新输入框
+  useEffect(() => {
+    if (transcript) {
+      setInputValue(transcript);
+    }
+  }, [transcript]);
+
+  // 修改自动滚动逻辑
+  useEffect(() => {
+    const messagesArea = messagesAreaRef.current;
+    if (!messagesArea) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = messagesArea;
+    // 计算是否应该显示"滚动到底部"按钮，使用更大的阈值
+    const showButton = scrollHeight - scrollTop - clientHeight > 100;
+    setShowScrollToBottom(showButton);
+
+    // 只有当用户没有主动滚动，或者是用户自己发送的消息时才自动滚动
+    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    const isUserMessage = lastMessage && lastMessage.sender === 'user';
+    const shouldAutoScroll = !userScrolling || isUserMessage;
+
+    if (shouldAutoScroll && messagesEndRef.current) {
+      // 如果是用户发送的消息，立即滚动，AI消息则平滑滚动
+      const behavior = isUserMessage ? 'auto' : 'smooth';
+      
+      // 使用requestAnimationFrame确保DOM更新后再滚动
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ 
+          behavior, 
+          block: 'end' 
+        });
+      });
+    }
+  }, [messages, userScrolling]);
+
+  // 优化处理滚动事件的逻辑
+  const handleScroll = () => {
+    const messagesArea = messagesAreaRef.current;
+    if (!messagesArea) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = messagesArea;
+    // 计算到底部的距离，使用更小的阈值判断是否在底部
+    const scrollBottomDistance = scrollHeight - scrollTop - clientHeight;
+    const atBottom = scrollBottomDistance < 20;
+
+    // 只有当距离底部超过100px且用户未标记为正在滚动时，才将状态更新为用户滚动
+    if (scrollBottomDistance > 100 && !userScrolling) {
+      setUserScrolling(true);
+    }
+
+    // 如果滚动到底部且用户标记为正在滚动，则重置状态
+    if (atBottom && userScrolling) {
+      setUserScrolling(false);
+    }
+
+    // 根据是否在底部决定是否显示滚动按钮
+    setShowScrollToBottom(!atBottom);
+  };
+
+  // 优化滚动到底部的函数
+  const scrollToBottom = () => {
+    if (!messagesEndRef.current) return;
+    
+    messagesEndRef.current.scrollIntoView({ 
+      behavior: 'smooth',
+      block: 'end'
+    });
+    
+    // 短暂延迟后重置用户滚动状态，确保动画完成
+    setTimeout(() => {
+      setUserScrolling(false);
+      setShowScrollToBottom(false);
+    }, 800);  // 增加延迟时间，确保滚动完成
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(event.target.value);
+  };
+
+  // 发送消息并获取AI回复
+  const handleSendMessage = async () => {
+    if (inputValue.trim() === '' || isLoading) return;
+    
+    const userMessageText = inputValue.trim();
+    const newUserMessage: Message = {
+      id: Date.now(),
+      text: userMessageText,
+      sender: 'user',
+    };
+    
+    setMessages(prevMessages => [...prevMessages, newUserMessage]);
+    setInputValue('');
+    setIsLoading(true);
+    
+    // 发送消息时重置滚动状态，确保显示新消息
+    setUserScrolling(false);
+    setShowScrollToBottom(false);
+    
+    // 添加临时消息表示AI正在思考
+    const thinkingMessageId = Date.now() + 1;
+    const thinkingMessage: Message = {
+      id: thinkingMessageId,
+      text: '正在思考...',
+      sender: 'ai',
+    };
+    setMessages(prevMessages => [...prevMessages, thinkingMessage]);
+    
+    try {
+      // 调用情感分析和AI回复API
+      const response = await analyzeAndChat(userMessageText);
+      
+      // 更新情感状态
+      if (response.detectedEmotion && onEmotionChange) {
+        onEmotionChange(response.detectedEmotion);
+        setCurrentEmotion(response.detectedEmotion);
+      }
+      
+      // 替换思考中消息为实际回复
+      const aiReply: Message = {
+        id: thinkingMessageId,
+        text: response.reply,
+        sender: 'ai',
+        emotion: response.detectedEmotion
+      };
+      
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.id === thinkingMessageId ? aiReply : msg
+        )
+      );
+      
+      // 使用TTS朗读AI回复
+      if (onAISpeak) {
+        onAISpeak(response.reply, { lang: 'zh-CN' });
+      }
+    } catch (error) {
+      console.error('获取AI回复失败:', error);
+      
+      // 替换思考中消息为错误消息
+      const errorMessage: Message = {
+        id: thinkingMessageId,
+        text: '抱歉，我暂时无法回应，请稍后再试。',
+        sender: 'ai',
+      };
+      
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.id === thinkingMessageId ? errorMessage : msg
+        )
+      );
+      
+      // 错误提示也需要TTS朗读
+      if (onAISpeak) {
+        onAISpeak(errorMessage.text, { lang: 'zh-CN' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const toggleListen = () => {
+    if (listening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  return (
+    <div className={`chat-window emotion-${currentEmotion}`}>
+      <div 
+        className="messages-area" 
+        ref={messagesAreaRef}
+        onScroll={handleScroll}
+      >
+        {messages.map((msg) => (
+          <div key={msg.id} className={`message ${msg.sender} ${msg.emotion ? `emotion-${msg.emotion}` : ''}`}>
+            {msg.text}
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+      
+      {/* 滚动到底部按钮 */}
+      {showScrollToBottom && (
+        <button className="scroll-to-bottom" onClick={scrollToBottom}>
+          ↓
+        </button>
+      )}
+      
+      {speechError && <p className="error-message">错误: {speechError}</p>}
+      
+      <div className="input-area">
+        <input
+          id="chat-input"
+          name="chat-input"
+          type="text"
+          placeholder={listening ? "正在聆听..." : isLoading ? "AI正在回应..." : "输入消息..."}
+          value={inputValue}
+          onChange={handleInputChange}
+          onKeyPress={(event: React.KeyboardEvent) => {
+            if (event.key === 'Enter') {
+              handleSendMessage();
+            }
+          }}
+          disabled={listening || isLoading}
+        />
+        <button 
+          className="send-button"
+          onClick={handleSendMessage} 
+          disabled={listening || isLoading || inputValue.trim() === ''}
+        >
+          {isLoading ? '...' : '发送'}
+        </button>
+        {isSpeechRecognitionSupported && (
+          <button 
+            className={`mic-button ${listening ? 'listening' : ''}`}
+            onClick={toggleListen}
+            disabled={isLoading}
+          >
+            {listening ? '🛑' : '🎤'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ChatInterface; 
