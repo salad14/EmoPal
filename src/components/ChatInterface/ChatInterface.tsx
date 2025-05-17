@@ -21,10 +21,7 @@ interface ChatInterfaceProps {
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChange, voiceReady }) => {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: 1, text: '你好！', sender: 'user' },
-    { id: 2, text: '你好，我是海绵宝宝接线员，有什么可以帮你的吗？', sender: 'ai' },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -48,24 +45,30 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
     // 如果已经播放过或语音尚未准备好，则不执行
     if (initialGreetingRef.current || !voiceReady) return;
     
-    // 设置初始欢迎语已经执行的标志，但不立即播放
+    // 设置初始欢迎语已经执行的标志
     initialGreetingRef.current = true;
     console.log("语音已准备好，准备播放AI初始欢迎语");
     
-    const initialAIMessage = messages.find(msg => msg.id === 2 && msg.sender === 'ai');
-    if (initialAIMessage && onAISpeak) {
-      // 增加短暂延迟，确保一切就绪
-      const timer = setTimeout(() => {
-        console.log("播放AI初始欢迎语:", initialAIMessage.text);
-        // 显式指定使用海绵宝宝音色来播放初始欢迎语
-        onAISpeak(initialAIMessage.text, { 
-          lang: 'zh-CN',
-          voiceType: 'spongebob' // 确保初始欢迎语使用海绵宝宝音色
-        });
-      }, 500); // 短暂延迟即可，因为我们已经确认语音准备好了
-      
-      return () => clearTimeout(timer);
-    }
+    // 创建并添加AI欢迎消息
+    const welcomeMessage: Message = {
+      id: Date.now(),
+      text: '你好，我是海绵宝宝接线员，有什么可以帮你的吗？',
+      sender: 'ai',
+    };
+    
+    setMessages([welcomeMessage]);
+    
+    // 增加短暂延迟，确保一切就绪
+    const timer = setTimeout(() => {
+      console.log("播放AI初始欢迎语:", welcomeMessage.text);
+      // 播放欢迎语
+      onAISpeak(welcomeMessage.text, { 
+        lang: 'zh-CN',
+        voiceType: 'spongebob' // 使用海绵宝宝音色
+      });
+    }, 500); // 短暂延迟即可，因为我们已经确认语音准备好了
+    
+    return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [voiceReady]); // 依赖于voiceReady，当语音准备好时触发
 
@@ -160,6 +163,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       sender: 'user',
     };
     
+    // 更新消息列表，添加用户消息
     setMessages(prevMessages => [...prevMessages, newUserMessage]);
     setInputValue('');
     setIsLoading(true);
@@ -176,27 +180,28 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ onAISpeak, onEmotionChang
       sender: 'ai',
     };
     
-    // 获取当前的消息列表，包括新增的用户消息，但不包括正在思考的消息
+    // 更新消息列表，添加"正在思考"消息
     let currentMessages: Message[] = [];
     setMessages(prevMessages => {
       currentMessages = [...prevMessages, thinkingMessage];
       return currentMessages;
     });
     
-    // 过滤出不包括"正在思考"消息的历史记录，用于发送给API
-    const chatHistory = currentMessages
-      .filter(msg => msg.text !== '正在思考...')
-      .map(msg => ({
-        id: msg.id,
-        text: msg.text,
-        sender: msg.sender,
-        emotion: msg.emotion
-      }));
-    
     try {
+      // 获取当前所有消息历史，但过滤掉"正在思考"消息
+      const chatHistory = currentMessages
+        .filter(msg => msg.id !== thinkingMessageId) // 过滤掉"正在思考"消息
+        .map(msg => ({
+          id: msg.id,
+          text: msg.text,
+          sender: msg.sender,
+          emotion: msg.emotion
+        }));
+      
       // 调用情感分析和AI回复API
       console.log('发送用户消息到API:', userMessageText);
       console.log('发送聊天历史:', chatHistory.length, '条消息');
+      console.log('聊天历史内容:', JSON.stringify(chatHistory));
       
       // 发送完整的聊天历史给API
       const response = await analyzeAndChat(userMessageText, chatHistory);
