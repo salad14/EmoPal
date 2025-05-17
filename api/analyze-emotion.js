@@ -70,7 +70,7 @@ async function analyzeSentiment(text) {
  * @param {string} text 需要分析的文本
  * @returns {Promise<Object>} 情绪识别结果
  */
-async function analyzeEmotionAPI(text) {
+async function analyzeEmotion(text) {
   try {
     const token = await getAccessToken();
     const response = await axios.post(
@@ -219,11 +219,11 @@ function formatEmotionResult(sentimentResult, emotionResult) {
 }
 
 /**
- * 情感分析处理函数
+ * 主处理函数
  * @param {object} req 请求对象
  * @param {object} res 响应对象
  */
-export async function analyzeEmotion(req, res) {
+export default async function handler(req, res) {
   // 仅接受POST请求
   if (req.method !== 'POST') {
     return res.status(405).json({ error: '仅支持POST请求' });
@@ -247,7 +247,7 @@ export async function analyzeEmotion(req, res) {
       // 并行调用两个API以提高性能
       const [sentimentResult, emotionResult] = await Promise.all([
         analyzeSentiment(text),
-        analyzeEmotionAPI(text)
+        analyzeEmotion(text)
       ]);
       
       // 格式化并合并两个API的结果
@@ -264,7 +264,4 @@ export async function analyzeEmotion(req, res) {
     console.error('处理请求时出错:', error);
     return res.status(500).json({ error: error.message || '服务器内部错误' });
   }
-}
-
-// 为了向后兼容，保留默认导出
-export default analyzeEmotion; 
+} 
