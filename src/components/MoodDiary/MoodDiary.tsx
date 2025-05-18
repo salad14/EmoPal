@@ -242,7 +242,10 @@ const MoodDiary: React.FC = () => {
           {weather && !isLoadingWeather && !weatherError && (
             <>
               {weather.icon && <img src={`https:${weather.icon}`} alt={weather.description} />}
-              <span>{weather.city} {weather.description}, {weather.temp}°C (体感 {weather.feelslike}°C)</span>
+              <span>
+                {weather.region || weather.city} {weather.description}, {weather.temp}°C 
+                (体感 {weather.feelslike}°C{weather.humidity ? `, 湿度 ${weather.humidity}%` : ''})
+              </span>
             </>
           )}
         </div>
