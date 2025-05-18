@@ -1,6 +1,7 @@
 import './App.css';
 import ChatInterface from './components/ChatInterface/ChatInterface.tsx';
 import VirtualAgent from './components/VirtualAgent/VirtualAgent.tsx';
+import MoodDiary from './components/MoodDiary/MoodDiary.tsx';
 import useWebSpeechSynthesis from './hooks/useWebSpeechSynthesis.ts';
 import { useState, useEffect, useRef } from 'react';
 import type { EmotionType } from './services/apiClient.ts';
@@ -242,7 +243,7 @@ function App() {
       
       <main className="app-main">
         <div className="left-sidebar">
-          {/* 左侧预留空间，未来可能添加功能 */}
+          <MoodDiary />
         </div>
         
         <div className="virtual-agent-section">

@@ -75,11 +75,6 @@
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* 移除音色控制区域样式 */
-.voice-controls {
-  display: none;
-}
-
 .voice-controls label,
 .voice-controls select,
 .voice-controls button {
@@ -93,14 +88,21 @@
 }
 
 .left-sidebar {
-  flex: 1;
+  flex: 1.5;
   border-right: 1px solid #eaeaea;
-  max-width: 25%;
+  max-width: 450px;
+  min-width: 300px;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(245, 245, 245, 0.8);
+  border-right: 1px solid rgba(0,0,0,0.08);
 }
 
 .virtual-agent-section {
-  flex: 2;
-  min-width: 50%;
+  flex: 1.5;
+  min-width: 40%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -118,22 +120,45 @@
   border-left: 1px solid #eaeaea;
 }
 
+@media (max-width: 1024px) {
+  .left-sidebar {
+    max-width: 300px;
+    min-width: 250px;
+  }
+  
+  .virtual-agent-section {
+    flex: 1.2;
+  }
+  
+  .chat-section {
+    min-width: 250px;
+  }
+}
+
 @media (max-width: 768px) {
   .app-main {
     flex-direction: column;
   }
   
   .left-sidebar {
-    display: none;
-  }
-  
-  .virtual-agent-section, .chat-section {
     max-width: 100%;
-    width: 100%;
+    min-height: 300px;
+    border-right: none;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+    order: 2;
   }
   
-  .app-container {
-    background: var(--emotion-gradient-start);
+  .virtual-agent-section {
+    min-height: 30vh;
+    max-width: 100%;
+    order: 1;
+  }
+
+  .chat-section {
+    max-width: 100%;
+    height: 40vh;
+    border-left: none;
+    order: 3;
   }
 }
 

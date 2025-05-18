@@ -1,0 +1,242 @@
+.mood-diary-container {
+  padding: 15px;
+  height: 100%; /* 确保填满左侧边栏分配的高度 */
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background-color: rgba(255, 255, 255, 0.05); /* 轻微背景色 */
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  color: #333; /* 确保深色文字在浅色背景上可读 */
+}
+
+.current-info {
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.current-info h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.2em;
+  /* color: var(--emotion-accent, #607D8B); */ /* 与App.css中的情感颜色联动 */
+  color: #4A5568; /* 一个更通用的深色标题颜色 */
+}
+
+.current-info p {
+  margin: 0;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.weather-info {
+  font-size: 0.85em;
+  color: #777;
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.weather-info img { /* 天气图标样式 */
+  width: 24px;
+  height: 24px;
+}
+
+/* react-calendar 自定义样式 */
+.mood-calendar {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  background-color: #fff; /* 确保日历背景不透明 */
+  font-family: inherit;
+  width: 100% !important; /* 确保日历宽度适应容器 */
+}
+
+.mood-calendar .react-calendar__navigation button {
+  color: var(--emotion-accent, #4a90e2); /* 导航按钮颜色 */
+  font-weight: bold;
+}
+.mood-calendar .react-calendar__navigation button:hover,
+.mood-calendar .react-calendar__navigation button:focus {
+  background-color: #e6f7ff; /* 导航按钮悬浮背景色 */
+}
+
+.mood-calendar .react-calendar__month-view__weekdays__weekday {
+  color: #333; /* 星期几的文字颜色 */
+  font-weight: normal;
+  text-transform: capitalize; /* 如果是英文，首字母大写 */
+}
+.mood-calendar .react-calendar__month-view__weekdays__weekday abbr {
+  text-decoration: none; /* 去掉星期几缩写的下划线 */
+}
+
+.mood-calendar .react-calendar__tile {
+  border-radius: 4px;
+  height: 40px; /* 调整日期格子高度 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative; /* 为了表情符号定位 */
+  color: #333; /* 日期数字颜色 */
+}
+
+.mood-calendar .react-calendar__tile--now { /* 今天的日期 */
+  background: #e6f7ff !important; /* 使用 !important 覆盖默认的黄色背景 */
+  color: #1890ff !important;
+  font-weight: bold;
+}
+.mood-calendar .react-calendar__tile--now:hover {
+  background: #d9f2ff !important;
+}
+
+.mood-calendar .react-calendar__tile--active { /* 当前选中的日期 */
+  background: var(--emotion-accent, #4a90e2) !important;
+  color: white !important;
+}
+.mood-calendar .react-calendar__tile--active:hover {
+  background: var(--emotion-accent, #3a80d2) !important;
+}
+
+.mood-indicator {
+  font-size: 1.1em; /* 表情符号大小 */
+  position: absolute; /* 绝对定位在日期格子的右下角或下方 */
+  bottom: 2px;
+  right: 2px;
+  line-height: 1;
+}
+
+/* 心情输入区域 */
+.mood-input-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mood-input-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 1em;
+  text-align: center;
+  color: #4A5568;
+}
+
+.mood-options {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 10px;
+  flex-wrap: wrap; /* 允许换行 */
+  gap: 5px; /* 按钮间距 */
+}
+
+.mood-options button {
+  background: none;
+  border: 2px solid transparent;
+  font-size: 1.8em; /* 表情符号大小 */
+  padding: 5px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s, border-color 0.2s;
+  color: #333; /* 确保表情符号可见 */
+  line-height: 1; /* 避免表情符号被截断 */
+}
+
+.mood-options button:hover {
+  transform: scale(1.1);
+}
+
+.mood-options button.selected {
+  border-color: var(--emotion-accent, #4a90e2);
+  transform: scale(1.1);
+  background-color: rgba(74, 144, 226, 0.1); /* 选中时的轻微背景 */
+}
+
+.mood-notes {
+  width: calc(100% - 22px); /* 减去 padding 和 border */
+  padding: 8px 10px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  min-height: 60px;
+  font-size: 0.9em;
+  resize: vertical;
+  background-color: #fff;
+  color: #333;
+}
+.mood-notes::placeholder {
+  color: #aaa;
+}
+
+.save-mood-button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background-color: var(--emotion-accent, #4a90e2);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.save-mood-button:hover {
+  background-color: var(--emotion-accent, #3a80d2);
+}
+.save-mood-button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* 日历上的心情标记样式 (通过 tileClassName 添加) */
+/* 注意：这种方式会在整个 tile 上应用背景色，如果只想显示 emoji，需要调整 */
+.mood-calendar .mood-happy { background-color: rgba(76, 175, 80, 0.2); }
+.mood-calendar .mood-sad { background-color: rgba(92, 107, 192, 0.2); }
+.mood-calendar .mood-neutral { background-color: rgba(158, 158, 158, 0.2); }
+.mood-calendar .mood-anxious { background-color: rgba(255, 193, 7, 0.2); }
+.mood-calendar .mood-angry { background-color: rgba(244, 67, 54, 0.2); }
+.mood-calendar .mood-loved { background-color: rgba(236, 64, 122, 0.2); }
+.mood-calendar .mood-excited { background-color: rgba(255, 167, 38, 0.2); }
+
+/* 如果只想通过 ::before 显示 emoji (这种方式更灵活) */
+.mood-calendar .mood-happy .mood-indicator::before { content: '😊'; }
+.mood-calendar .mood-sad .mood-indicator::before { content: '😢'; }
+.mood-calendar .mood-neutral .mood-indicator::before { content: '😐'; }
+.mood-calendar .mood-anxious .mood-indicator::before { content: '😟'; }
+.mood-calendar .mood-angry .mood-indicator::before { content: '😠'; }
+.mood-calendar .mood-loved .mood-indicator::before { content: '🥰'; }
+.mood-calendar .mood-excited .mood-indicator::before { content: '🎉'; }
+
+/* 非当月日期样式 */
+.mood-calendar .react-calendar__month-view__days__day--neighboringMonth {
+  color: #ccc !important;
+  opacity: 0.6;
+}
+
+/* 禁用的日期样式 */
+.mood-calendar .react-calendar__tile:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: #f0f0f0;
+}
+
+.mood-calendar .react-calendar__tile--future {
+  color: #bbb;
+  background-color: rgba(200, 200, 200, 0.1);
+}
+
+.future-date-warning {
+  text-align: center;
+  padding: 15px;
+  background-color: rgba(255, 235, 59, 0.1);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 4px;
+  margin: 10px 0;
+}
+
+.future-date-warning p {
+  margin: 0;
+  color: #d45500;
+  font-size: 0.9em;
+} 
