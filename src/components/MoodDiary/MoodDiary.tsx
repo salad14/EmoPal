@@ -241,7 +241,7 @@ const MoodDiary: React.FC = () => {
           {weatherError && <span style={{ color: 'red' }}>{weatherError}</span>}
           {weather && !isLoadingWeather && !weatherError && (
             <>
-              {weather.icon && <img src={weather.icon} alt={weather.description} />}
+              {weather.icon && <img src={`https:${weather.icon}`} alt={weather.description} />}
               <span>{weather.city} {weather.description}, {weather.temp}°C (体感 {weather.feelslike}°C)</span>
             </>
           )}
