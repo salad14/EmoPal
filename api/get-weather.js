@@ -4,7 +4,7 @@ export const config = {
   regions: ['iad1'], // 可以根据你的主要用户群体选择区域
 };
 
-const API_KEY = process.env.OPENWEATHERMAP_API_KEY;
+const API_KEY = process.env.WEATHERAPI_KEY;
 
 export default async function handler(request) {
   if (request.method !== 'GET') {
@@ -15,7 +15,7 @@ export default async function handler(request) {
   }
 
   if (!API_KEY) {
-    console.error('错误：未配置OpenWeatherMap API Key');
+    console.error('错误：未配置WeatherAPI Key');
     return new Response(JSON.stringify({ error: '天气服务配置错误' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -26,7 +26,6 @@ export default async function handler(request) {
   const lat = searchParams.get('lat');
   const lon = searchParams.get('lon');
   const lang = 'zh_cn'; // 固定为中文
-  const units = 'metric'; // 固定为摄氏度
 
   if (!lat || !lon) {
     return new Response(JSON.stringify({ error: '需要提供经纬度参数 (lat, lon)' }), {
@@ -35,14 +34,15 @@ export default async function handler(request) {
     });
   }
 
-  const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&lang=${lang}&units=${units}`;
+  // WeatherAPI.com的API端点
+  const apiUrl = `https://api.weatherapi.com/v1/current.json?key=${API_KEY}&q=${lat},${lon}&lang=${lang}&aqi=yes`;
 
   try {
     const weatherResponse = await fetch(apiUrl);
     if (!weatherResponse.ok) {
       const errorData = await weatherResponse.json();
-      console.error('OpenWeatherMap API 错误:', weatherResponse.status, errorData);
-      return new Response(JSON.stringify({ error: `获取天气数据失败: ${errorData.message || weatherResponse.statusText}` }), {
+      console.error('WeatherAPI.com 错误:', weatherResponse.status, errorData);
+      return new Response(JSON.stringify({ error: `获取天气数据失败: ${errorData.error?.message || weatherResponse.statusText}` }), {
         status: weatherResponse.status,
         headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
       });
@@ -50,12 +50,15 @@ export default async function handler(request) {
 
     const data = await weatherResponse.json();
     
-    // 提取需要的信息
+    // 提取需要的信息 (WeatherAPI.com的数据结构不同)
     const result = {
-      description: data.weather[0]?.description || '未知',
-      temp: Math.round(data.main?.temp), // 四舍五入温度
-      icon: data.weather[0]?.icon, // 天气图标代码
-      city: data.name || '', // 城市名
+      description: data.current?.condition?.text || '未知',
+      temp: Math.round(data.current?.temp_c), // 四舍五入温度
+      icon: data.current?.condition?.icon, // 天气图标URL
+      city: data.location?.name || '', // 城市名
+      region: data.location?.region || '', // 地区
+      humidity: data.current?.humidity || 0, // 湿度
+      feelslike: Math.round(data.current?.feelslike_c) || 0, // 体感温度
     };
 
     return new Response(JSON.stringify(result), {

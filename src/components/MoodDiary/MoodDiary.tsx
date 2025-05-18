@@ -19,11 +19,15 @@ interface MoodData {
   [date: string]: MoodEntry; // 日期格式: YYYY-MM-DD
 }
 
+// 更新WeatherData接口以匹配WeatherAPI.com的返回数据结构
 interface WeatherData {
   description: string;
   temp?: number;
   icon?: string;
   city?: string;
+  region?: string;
+  humidity?: number;
+  feelslike?: number;
 }
 
 const MOOD_STORAGE_KEY = 'heartfeltPartner_moodDiaryData_v1'; // 更具体的键名
@@ -237,8 +241,8 @@ const MoodDiary: React.FC = () => {
           {weatherError && <span style={{ color: 'red' }}>{weatherError}</span>}
           {weather && !isLoadingWeather && !weatherError && (
             <>
-              {weather.icon && <img src={`https://openweathermap.org/img/wn/${weather.icon}.png`} alt={weather.description} />}
-              <span>{weather.city} {weather.description}, {weather.temp}°C</span>
+              {weather.icon && <img src={weather.icon} alt={weather.description} />}
+              <span>{weather.city} {weather.description}, {weather.temp}°C (体感 {weather.feelslike}°C)</span>
             </>
           )}
         </div>
