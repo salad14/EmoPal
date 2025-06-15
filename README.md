@@ -13,7 +13,7 @@ EmoPal是一个AI虚拟伙伴应用，能够通过语音和文本与用户进行
 
 1. 克隆仓库
 ```bash
-git clone [仓库地址]
+git clone [https://github.com/salad14/EmoPal]
 cd EmoPal
 ```
 

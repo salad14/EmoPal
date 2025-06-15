@@ -231,14 +231,6 @@ function App() {
     <div className={`app-container emotion-${currentEmotion}`}>
       <header className="app-header">
         <h1>EmoPal - 心灵伙伴</h1>
-        
-        {/* 调试按钮 */}
-        <button 
-          onClick={listAvailableVoices}
-          style={{position: 'absolute', right: '10px', top: '10px', fontSize: '10px'}}
-        >
-          检查语音
-        </button>
       </header>
       
       <main className="app-main">
@@ -261,11 +253,6 @@ function App() {
           />
         </div>
       </main>
-      
-      {/* 显示当前情感状态的调试信息 */}
-      <div className="emotion-debug">
-        当前情感: {currentEmotion} | 语速: {speechRate.toFixed(2)} | 音调: {speechPitch.toFixed(2)}
-      </div>
     </div>
   );
 }
